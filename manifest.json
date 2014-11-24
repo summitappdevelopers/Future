@@ -1,0 +1,29 @@
+{
+	"manifest_version": 2,
+	"name": "My Future PLP",
+	"description": "Extends the PLP grade viewer to help students plan for the future.",
+	"version": "0.0.1",
+	"permissions": [
+		"tabs",
+		"activeTab",
+		"https://app.mysummitps.org/my/*"
+	],
+	"web_accessible_resources": [
+		"libs.js",
+		"user.js",
+		"application.css"
+	],
+	"content_scripts": [
+		{
+			"matches": [
+				"https://app.mysummitps.org/my/future"
+			],
+			"js": [
+				"content_script.js"
+			],
+			"css": [
+				"application.css"
+			]
+		}
+	]
+}

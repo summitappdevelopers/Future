@@ -1,0 +1,4 @@
+# Sublime Text
+.sbl/
+*.sublime-project
+*.sublime-workspace
