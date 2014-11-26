@@ -9,8 +9,10 @@ $('style').remove();
 courses = [];
 $('<body></body>').append($.ajax({ type: 'GET', url: 'https://app.mysummitps.org/my/grades', async: false }).responseText).find('div.course.boxed').toArray().forEach(function(elem) {
 	elem = $(elem);
+	var skill_id = 0;
 
 	courses.push({
+		id: courses.length,
 		name: elem.find('div.span8>h4').text().slice(0, -1),
 		power_pace: elem.find('div.span1.text-right.out-of:eq(0)').text().split('/').map(function(elem) { return parseInt(elem, 10); }),
 		additional_pace: elem.find('div.span1.text-right.out-of:eq(1)').text().split('/').map(function(elem) { return parseInt(elem, 10); }),
@@ -19,6 +21,7 @@ $('<body></body>').append($.ajax({ type: 'GET', url: 'https://app.mysummitps.org
 			var skill = $(skill);
 
 			return {
+				id: skill_id++,
 				name: skill.find('td:eq(0)').text(),
 				weight: parseInt(skill.find('td:eq(1)').text(), 10),
 				score: parseFloat(skill.find('td.scored').text(), 10) || 0
@@ -29,13 +32,13 @@ $('<body></body>').append($.ajax({ type: 'GET', url: 'https://app.mysummitps.org
 
 var Skill = React.createClass({
 	buildTD: function(number) {
-		return <td className={'indicator ' + (this.props.skill.score === number ? 'scored' : '' )}>{number}</td>
+		return <td className={'indicator ' + (this.props.skill.score === number ? 'scored' : '' )} onClick={this.props.onCogGradeChange}>{number}</td>
 	},
 	render: function() {
 		return (
 			<tr>
 				<td>{this.props.skill.name}</td>
-				<td>{this.props.skill.weight}</td>
+				<td style={{ margin: '0px', padding: '0px' }}><input style={{ height: '100%', width: '54px', margin: '0px', padding: '0px', border: 'none' }} value={this.props.skill.weight} onChange={this.props.onCogWeightChange} /></td>
 				{[1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8].map(this.buildTD)}
 			</tr>
 		);
@@ -45,12 +48,13 @@ var Skill = React.createClass({
 var Course = React.createClass({
 	getInitialState: function() {
 		var state = {};
-		state.cog_avg = this.cog_avg(this.props.course.cog_skills);
+		state.course = this.props.course;
+		state.cog_avg = this.cog_avg(state.course.cog_skills);
 		state.cog_percentage = Math.round((15 * (state.cog_avg - 5) + 70));
-		state.power_percentage = Math.round(this.props.course.power_pace[0] / (this.props.course.power_pace[1] || 1) * 100);
-		state.additional_percentage = Math.round(this.props.course.additional_pace[0] / (this.props.course.additional_pace[1] || 1) * 100);
+		state.power_percentage = Math.round(state.course.power_pace[0] / (state.course.power_pace[1] || 1) * 100);
+		state.additional_percentage = Math.round(state.course.additional_pace[0] / (state.course.additional_pace[1] || 1) * 100);
 		state.total_percentage = Math.round(state.cog_percentage * 0.7 + state.power_percentage * 0.21 + state.additional_percentage * 0.09);
-		state.total_grade = this.letter_grade(state.total_percentage)
+		state.total_grade = this.letter_grade(state.total_percentage);
 
 		return state;
 	},
@@ -59,25 +63,31 @@ var Course = React.createClass({
 			weight_total = 0;
 
 		for (var i = 0; i < skills.length; i++) {
-			cog_total += skills[i].score * skills[i].weight;
-			weight_total += skills[i].weight;
+			cog_total += (+skills[i].score || 0) * (+skills[i].weight || 0);
+			weight_total += (+skills[i].weight || 0);
 		}
 
-		return Math.round(cog_total / (weight_total || 1) * 100) / 100;
+		if (weight_total === 0) {
+			return 7;
+		}
+
+		return Math.round(cog_total / weight_total * 100) / 100;
 	},
 	letter_grade: function(percentage) {
 		var plusminus = percentage % 10;
 		var abcf = (percentage - (plusminus)) / 10;
 		var grade = '';
 
-		if (abcf > 8) {
+		if (abcf > 9) {
+			return 'A+';
+		} else if (abcf > 8) {
 			grade = 'A';
 		} else if (abcf > 7) {
 			grade = 'B';
 		} else if (abcf > 6) {
 			grade = 'C';
 		} else {
-			grade = 'Incomplete';
+			return 'Incomplete';
 		}
 
 		if (plusminus < 4) {
@@ -88,18 +98,46 @@ var Course = React.createClass({
 
 		return grade;
 	},
+	onCogGradeChange: function(skill, e) {
+		this.state.course.cog_skills[skill.id].score = +e.target.innerHTML || 0;
+		this.state.cog_avg = this.cog_avg(this.state.course.cog_skills);
+		this.state.cog_percentage = Math.round((15 * (this.state.cog_avg - 5) + 70));
+		this.state.total_percentage = Math.round(this.state.cog_percentage * 0.7 + this.state.power_percentage * 0.21 + this.state.additional_percentage * 0.09);
+		this.state.total_grade = this.letter_grade(this.state.total_percentage);
+		this.setState({
+			course: this.state.course,
+			cog_avg: this.state.cog_avg,
+			cog_percentage: this.state.cog_percentage,
+			total_percentage: this.state.total_percentage,
+			total_grade: this.state.total_grade
+		});
+	},
+	onCogWeightChange: function(skill, e) {
+		this.state.course.cog_skills[skill.id].weight = e.target.value;
+		this.state.cog_avg = this.cog_avg(this.state.course.cog_skills);
+		this.state.cog_percentage = Math.round((15 * (this.state.cog_avg - 5) + 70));
+		this.state.total_percentage = Math.round(this.state.cog_percentage * 0.7 + this.state.power_percentage * 0.21 + this.state.additional_percentage * 0.09);
+		this.state.total_grade = this.letter_grade(this.state.total_percentage);
+		this.setState({
+			course: this.state.course,
+			cog_avg: this.state.cog_avg,
+			cog_percentage: this.state.cog_percentage,
+			total_percentage: this.state.total_percentage,
+			total_grade: this.state.total_grade
+		});
+	},
 	buildSkill: function(skill) {
-		return <Skill skill={skill} />;
+		return <Skill skill={skill} onCogGradeChange={this.onCogGradeChange.bind(this, skill)} onCogWeightChange={this.onCogWeightChange.bind(this, skill)} />;
 	},
 	render: function() {
 		return (
 			<div className="course boxed">
 				<div className="row-fluid show-hide-details">
-					<div className="span8"><h4>{this.props.course.name}:</h4></div>
+					<div className="span8"><h4>{this.state.course.name}:</h4></div>
 					<div className="span2 text-right"><h4 className="course-score">{this.state.total_percentage}%</h4></div>
 					<div className="span2"><h4 className="course-grade">{this.state.total_grade}</h4></div>
 				</div>
-				<div className="row-fluid details"><div className="span7">You have <b>{this.props.course.overdue_projects} {this.props.course.overdue_projects === 1 ? 'project' : 'projects'}</b> overdue.</div></div>
+				<div className="row-fluid details"><div className="span7">You have <b>{this.state.course.overdue_projects} {this.state.course.overdue_projects === 1 ? 'project' : 'projects'}</b> overdue.</div></div>
 				<div className="row-fluid details show-hide-cog-skills grade-component">
 					<div className="span7">For your <strong>cognitive skills</strong>, you have an average of:</div>
 					<div className="span1 cog-avg text-right">{this.state.cog_avg}</div>
@@ -109,6 +147,13 @@ var Course = React.createClass({
 					<div className="cog-skills span8">
 						<table className="table table-bordered table-condensed scores-table">
 							<thead>
+								<tr>
+									<th></th>
+									<th></th>
+									<th colSpan={15}>
+										<div className={'cog-skill-avg'} style={{ position: 'relative', left: 'calc( ' + this.state.cog_percentage + '% - 20% )' }}>{this.state.cog_avg.toFixed(2)}</div>
+									</th>
+								</tr>
 								<tr>
 									<th>Cognitive Skill</th>
 									<th>Weight</th>
@@ -130,7 +175,7 @@ var Course = React.createClass({
 								</tr>
 							</thead>
 							<tbody>
-								{this.props.course.cog_skills.map(this.buildSkill)}
+								{this.state.course.cog_skills.map(this.buildSkill)}
 							</tbody>
 						</table>
 					</div>
@@ -138,14 +183,14 @@ var Course = React.createClass({
 				<div className="focus-areas details power-true grade-component">
 					<div className="row-fluid">
 						<div className="span7">For your <strong>power</strong> focus areas, you are on pace to complete:</div>
-						<div className="span1 text-right out-of">{this.props.course.power_pace[0] + '/' + this.props.course.power_pace[1]}</div>
+						<div className="span1 text-right out-of">{this.state.course.power_pace[0] + '/' + this.state.course.power_pace[1]}</div>
 						<div className="span2 text-right pcnt">{this.state.power_percentage}%</div>
 					</div>
 				</div>
 				<div className="focus-areas details power-false grade-component">
 					<div className="row-fluid">
 						<div className="span7">For your <strong>additional</strong> focus areas, you are on pace to complete:</div>
-						<div className="span1 text-right out-of">{this.props.course.additional_pace[0] + '/' + this.props.course.additional_pace[1]}</div>
+						<div className="span1 text-right out-of">{this.state.course.additional_pace[0] + '/' + this.state.course.additional_pace[1]}</div>
 						<div className="span2 text-right pcnt">{this.state.additional_percentage}%</div>
 					</div>
 				</div>
@@ -160,11 +205,11 @@ var App = React.createClass({
 			courses: courses
 		};
 	},
-	changeCogGrade: function(e) {
-		console.log(e.target);
+	resetGrades: function() {
+		alert('Still working on this method!');
 	},
 	buildCourse: function(course) {
-		return <Course course={course} changeCogGrade={this.changeCogGrade} />;
+		return <Course course={course} />;
 	},
 	render: function() {
 		return (
@@ -172,7 +217,7 @@ var App = React.createClass({
 				<p className="warning">
 					<em style={{ color: 'red' }}>These grades may not represent your current grades.</em>
 					&nbsp; &nbsp;
-					<button>Reset Grades</button>
+					<button onClick={this.resetGrades}>Reset Grades</button>
 				</p>
 				{this.state.courses.map(this.buildCourse)}
 			</div>
