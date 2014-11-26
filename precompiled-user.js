@@ -126,6 +126,18 @@ var Course = React.createClass({displayName: 'Course',
 			total_grade: this.state.total_grade
 		});
 	},
+	onAssessmentChange: function(type, e) {
+		this.state.course[type + '_pace'][0] = e.target.value;
+		this.state[type + '_percentage'] = Math.round((this.state.course[type + '_pace'][0] || 0) / (this.state.course[type + '_pace'][1] || 1) * 100);
+		this.state.total_percentage = Math.round(this.state.cog_percentage * 0.7 + this.state.power_percentage * 0.21 + this.state.additional_percentage * 0.09);
+		this.state.total_grade = this.letter_grade(this.state.total_percentage);
+		eval('this.setState({' +
+			 '	course: this.state.course,' +
+			 '	' + type + '_percentage: this.state[type + \'_percentage\'],' +
+			 '	total_percentage: this.state.total_percentage,' +
+			 '	total_grade: this.state.total_grade' +
+			 '});');
+	},
 	buildSkill: function(skill) {
 		return React.createElement(Skill, {skill: skill, onCogGradeChange: this.onCogGradeChange.bind(this, skill), onCogWeightChange: this.onCogWeightChange.bind(this, skill)});
 	},
@@ -151,7 +163,7 @@ var Course = React.createClass({displayName: 'Course',
 									React.createElement("th", null),
 									React.createElement("th", null),
 									React.createElement("th", {colSpan: 15},
-										React.createElement("div", {className: 'cog-skill-avg', style: { position: 'relative', left: 'calc( ' + this.state.cog_percentage + '% - 20% )'}}, this.state.cog_avg.toFixed(2))
+										React.createElement("div", {className: "cog-skill-avg", style: { position: 'relative', left: 'calc( ' + this.state.cog_percentage + '% - 20% )'}}, this.state.cog_avg.toFixed(2))
 									)
 								),
 								React.createElement("tr", null,
@@ -183,15 +195,20 @@ var Course = React.createClass({displayName: 'Course',
 				React.createElement("div", {className: "focus-areas details power-true grade-component"},
 					React.createElement("div", {className: "row-fluid"},
 						React.createElement("div", {className: "span7"}, "For your ", React.createElement("strong", null, "power"), " focus areas, you are on pace to complete:"),
-						React.createElement("div", {className: "span1 text-right out-of"}, this.state.course.power_pace[0] + '/' + this.state.course.power_pace[1]),
+						React.createElement("div", {className: "span1 text-right out-of"},
+							React.createElement("input", {value: this.state.course.power_pace[0], style: { width: '20px', border: 'none', textAlign: 'right'}, onChange: this.onAssessmentChange.bind(this, 'power')}),
+							"/ ", this.state.course.power_pace[1]
+						),
 						React.createElement("div", {className: "span2 text-right pcnt"}, this.state.power_percentage, "%")
 					)
 				),
 				React.createElement("div", {className: "focus-areas details power-false grade-component"},
 					React.createElement("div", {className: "row-fluid"},
 						React.createElement("div", {className: "span7"}, "For your ", React.createElement("strong", null, "additional"), " focus areas, you are on pace to complete:"),
-						React.createElement("div", {className: "span1 text-right out-of"}, this.state.course.additional_pace[0] + '/' + this.state.course.additional_pace[1]),
-						React.createElement("div", {className: "span2 text-right pcnt"}, this.state.additional_percentage, "%")
+						React.createElement("div", {className: "span1 text-right out-of"},
+							React.createElement("input", {value: this.state.course.additional_pace[0], style: { width: '20px', border: 'none', textAlign: 'right'}, onChange: this.onAssessmentChange.bind(this, 'additional')}),
+							"/ ", this.state.course.additional_pace[1]
+						), React.createElement("div", {className: "span2 text-right pcnt"}, this.state.additional_percentage, "%")
 					)
 				)
 			)
