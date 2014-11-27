@@ -6,29 +6,38 @@
 $('title').text('Summit PLP | My Future');
 $('style').remove();
 
-courses = [];
-$('<body></body>').append($.ajax({ type: 'GET', url: 'https://app.mysummitps.org/my/grades', async: false }).responseText).find('div.course.boxed').toArray().forEach(function(elem) {
-	elem = $(elem);
-	var skill_id = 0;
+function getCourses() {
+	courses = [];
+	$('<body></body>').append($.ajax({ type: 'GET', url: 'https://app.mysummitps.org/my/grades', async: false }).responseText).find('div.course.boxed').toArray().forEach(function(elem) {
+		elem = $(elem);
+		var skill_id = 0;
 
-	courses.push({
-		id: courses.length,
-		name: elem.find('div.span8>h4').text().slice(0, -1),
-		power_pace: elem.find('div.span1.text-right.out-of:eq(0)').text().split('/').map(function(elem) { return parseInt(elem, 10); }),
-		additional_pace: elem.find('div.span1.text-right.out-of:eq(1)').text().split('/').map(function(elem) { return parseInt(elem, 10); }),
-		overdue_projects: parseInt(elem.find('div.span7>b').text().replace(' projects'), 10),
-		cog_skills: elem.find('tbody').children().toArray().map(function(skill) {
-			var skill = $(skill);
+		courses.push({
+			id: courses.length,
+			name: elem.find('div.span8>h4').text().slice(0, -1),
+			power_pace: elem.find('div.span1.text-right.out-of:eq(0)').text().split('/').map(function(elem) { return parseInt(elem, 10); }),
+			additional_pace: elem.find('div.span1.text-right.out-of:eq(1)').text().split('/').map(function(elem) { return parseInt(elem, 10); }),
+			overdue_projects: parseInt(elem.find('div.span7>b').text().replace(' projects'), 10),
+			cog_skills: elem.find('tbody').children().toArray().map(function(skill) {
+				var skill = $(skill);
 
-			return {
-				id: skill_id++,
-				name: skill.find('td:eq(0)').text(),
-				weight: parseInt(skill.find('td:eq(1)').text(), 10),
-				score: parseFloat(skill.find('td.scored').text(), 10) || 0
-			};
-		})
+				return {
+					id: skill_id++,
+					name: skill.find('td:eq(0)').text(),
+					weight: parseInt(skill.find('td:eq(1)').text(), 10),
+					score: parseFloat(skill.find('td.scored').text(), 10) || 0
+				};
+			})
+		});
 	});
-});
+
+	localStorage.setItem('old_courses', JSON.stringify(courses));
+}
+
+courses = JSON.parse(localStorage.getItem('old_courses') || 'null');
+if (courses === null) {
+	getCourses();
+}
 
 var Skill = React.createClass({displayName: 'Skill',
 	buildTD: function(number) {
@@ -57,6 +66,62 @@ var Course = React.createClass({displayName: 'Course',
 		state.total_grade = this.letter_grade(state.total_percentage);
 
 		return state;
+	},
+	updateState: function(children) {
+		var newstate = {};
+
+		children.forEach((function(child) {
+			switch (child) {
+				case 'course': {
+					newstate.course = this.state.course;
+					break;
+				}
+
+				case 'cog_avg': {
+					this.state.cog_avg = this.cog_avg(this.state.course.cog_skills);
+					newstate.cog_avg = this.state.cog_avg;
+					break;
+				}
+
+				case 'cog_percentage': {
+					this.state.cog_percentage = Math.round(15 * (+this.state.cog_avg - 5) + 70);
+					newstate.cog_percentage = this.state.cog_percentage;
+					break;
+				}
+
+				case 'power_percentage': {
+					var retval = Math.round((+this.state.course.power_pace[0] || 0) / (+this.state.course.power_pace[1] || 0) * 100);
+					isNaN(retval) && (retval = 100);
+
+					this.state.power_percentage = retval;
+					newstate.retval = this.state.retval;
+					break;
+				}
+
+				case 'additional_percentage': {
+					var retval = Math.round((+this.state.course.additional_pace[0] || 0) / (+this.state.course.additional_pace[1] || 0) * 100);
+					isNaN(retval) && (retval = 100);
+
+					this.state.additional_percentage = retval;
+					newstate.additional_percentage = this.state.additional_percentage;
+					break;
+				}
+
+				case 'total_percentage': {
+					this.state.total_percentage = Math.round(+this.state.cog_percentage * 0.7 + +this.state.power_percentage * 0.21 + +this.state.additional_percentage * 0.09);
+					newstate.total_percentage = this.state.total_percentage;
+					break;
+				}
+
+				case 'total_grade': {
+					this.state.total_grade = this.letter_grade(+this.state.total_percentage);
+					newstate.total_grade = this.state.total_grade;
+					break;
+				}
+			}
+		}).bind(this));
+
+		this.setState(newstate);
 	},
 	cog_avg: function(skills) {
 		var cog_total = 0,
@@ -100,43 +165,15 @@ var Course = React.createClass({displayName: 'Course',
 	},
 	onCogGradeChange: function(skill, e) {
 		this.state.course.cog_skills[skill.id].score = +e.target.innerHTML || 0;
-		this.state.cog_avg = this.cog_avg(this.state.course.cog_skills);
-		this.state.cog_percentage = Math.round((15 * (this.state.cog_avg - 5) + 70));
-		this.state.total_percentage = Math.round(this.state.cog_percentage * 0.7 + this.state.power_percentage * 0.21 + this.state.additional_percentage * 0.09);
-		this.state.total_grade = this.letter_grade(this.state.total_percentage);
-		this.setState({
-			course: this.state.course,
-			cog_avg: this.state.cog_avg,
-			cog_percentage: this.state.cog_percentage,
-			total_percentage: this.state.total_percentage,
-			total_grade: this.state.total_grade
-		});
+		this.updateState(['course', 'cog_avg', 'cog_percentage', 'total_percentage', 'total_grade']);
 	},
 	onCogWeightChange: function(skill, e) {
 		this.state.course.cog_skills[skill.id].weight = e.target.value;
-		this.state.cog_avg = this.cog_avg(this.state.course.cog_skills);
-		this.state.cog_percentage = Math.round((15 * (this.state.cog_avg - 5) + 70));
-		this.state.total_percentage = Math.round(this.state.cog_percentage * 0.7 + this.state.power_percentage * 0.21 + this.state.additional_percentage * 0.09);
-		this.state.total_grade = this.letter_grade(this.state.total_percentage);
-		this.setState({
-			course: this.state.course,
-			cog_avg: this.state.cog_avg,
-			cog_percentage: this.state.cog_percentage,
-			total_percentage: this.state.total_percentage,
-			total_grade: this.state.total_grade
-		});
+		this.updateState(['course', 'cog_avg', 'cog_percentage', 'total_percentage', 'total_grade']);
 	},
 	onAssessmentChange: function(type, e) {
 		this.state.course[type + '_pace'][0] = e.target.value;
-		this.state[type + '_percentage'] = Math.round((this.state.course[type + '_pace'][0] || 0) / (this.state.course[type + '_pace'][1] || 1) * 100);
-		this.state.total_percentage = Math.round(this.state.cog_percentage * 0.7 + this.state.power_percentage * 0.21 + this.state.additional_percentage * 0.09);
-		this.state.total_grade = this.letter_grade(this.state.total_percentage);
-		eval('this.setState({' +
-			 '	course: this.state.course,' +
-			 '	' + type + '_percentage: this.state[type + \'_percentage\'],' +
-			 '	total_percentage: this.state.total_percentage,' +
-			 '	total_grade: this.state.total_grade' +
-			 '});');
+		this.updateState(['course', type + '_percentage', 'total_percentage', 'total_grade']);
 	},
 	buildSkill: function(skill) {
 		return React.createElement(Skill, {skill: skill, onCogGradeChange: this.onCogGradeChange.bind(this, skill), onCogWeightChange: this.onCogWeightChange.bind(this, skill)});
@@ -223,7 +260,8 @@ var App = React.createClass({displayName: 'App',
 		};
 	},
 	resetGrades: function() {
-		alert('Still working on this method!');
+		getCourses();
+		window.location.reload();
 	},
 	buildCourse: function(course) {
 		return React.createElement(Course, {course: course});
@@ -234,7 +272,7 @@ var App = React.createClass({displayName: 'App',
 				React.createElement("p", {className: "warning"},
 					React.createElement("em", {style: { color: 'red'}}, "These grades may not represent your current grades."),
 					"   ",
-					React.createElement("button", {onClick: this.resetGrades}, "Reset Grades")
+					React.createElement("button", {onClick: this.resetGrades}, "Reset/Update Grades")
 				),
 				this.state.courses.map(this.buildCourse)
 			)
