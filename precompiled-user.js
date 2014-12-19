@@ -155,7 +155,7 @@ var Course = React.createClass({displayName: 'Course',
 			return 'Incomplete';
 		}
 
-		if (plusminus < 4) {
+		if (plusminus < 3) {
 			grade += '-';
 		} else if (plusminus > 6) {
 			grade += '+';
