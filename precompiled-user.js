@@ -39,7 +39,7 @@ if (courses === null) {
 	getCourses();
 }
 
-var Skill = React.createClass({displayName: 'Skill',
+var Skill = React.createClass({displayName: "Skill",
 	buildTD: function(number) {
 		return React.createElement("td", {className: 'indicator ' + (this.props.skill.score === number ? 'scored' : ''), onClick: this.props.onCogGradeChange}, number)
 	},
@@ -54,14 +54,14 @@ var Skill = React.createClass({displayName: 'Skill',
 	}
 });
 
-var Course = React.createClass({displayName: 'Course',
+var Course = React.createClass({displayName: "Course",
 	getInitialState: function() {
 		var state = {};
 		state.course = this.props.course;
 		state.cog_avg = this.cog_avg(state.course.cog_skills);
 		state.cog_percentage = Math.round((15 * (state.cog_avg - 5) + 70));
-		state.power_percentage = Math.round(state.course.power_pace[0] / (state.course.power_pace[1] || 1) * 100);
-		state.additional_percentage = Math.round(state.course.additional_pace[0] / (state.course.additional_pace[1] || 1) * 100);
+		state.power_percentage = Math.round((state.course.power_pace[0] || 1) / (state.course.power_pace[1] || 1) * 100);
+		state.additional_percentage = Math.round((state.course.additional_pace[0] || 1) / (state.course.additional_pace[1] || 1) * 100);
 		state.total_percentage = Math.round(state.cog_percentage * 0.7 + state.power_percentage * 0.21 + state.additional_percentage * 0.09);
 		state.total_grade = this.letter_grade(state.total_percentage);
 
@@ -253,7 +253,7 @@ var Course = React.createClass({displayName: 'Course',
 	}
 });
 
-var App = React.createClass({displayName: 'App',
+var App = React.createClass({displayName: "App",
 	getInitialState: function() {
 		return {
 			courses: courses
