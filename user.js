@@ -64,6 +64,7 @@ var Course = React.createClass({
 		state.additional_percentage = Math.round((state.course.additional_pace[0] || 1) / (state.course.additional_pace[1] || 1) * 100);
 		state.total_percentage = Math.round(state.cog_percentage * 0.7 + state.power_percentage * 0.21 + state.additional_percentage * 0.09);
 		state.total_grade = this.letter_grade(state.total_percentage);
+		state.hidden = true;
 
 		return state;
 	},
@@ -178,21 +179,24 @@ var Course = React.createClass({
 	buildSkill: function(skill) {
 		return <Skill skill={skill} onCogGradeChange={this.onCogGradeChange.bind(this, skill)} onCogWeightChange={this.onCogWeightChange.bind(this, skill)} />;
 	},
+	hideCourse: function(event) {
+		this.setState({ hidden: !this.state.hidden });
+	},
 	render: function() {
 		return (
 			<div className="course boxed">
-				<div className="row-fluid show-hide-details">
+				<div className="row-fluid show-hide-details" onClick={this.hideCourse}>
 					<div className="span8"><h4>{this.state.course.name}:</h4></div>
 					<div className="span2 text-right"><h4 className="course-score">{this.state.total_percentage}%</h4></div>
 					<div className="span2"><h4 className="course-grade">{this.state.total_grade}</h4></div>
 				</div>
-				<div className="row-fluid details"><div className="span7">You have <b>{this.state.course.overdue_projects} {this.state.course.overdue_projects === 1 ? 'project' : 'projects'}</b> overdue.</div></div>
-				<div className="row-fluid details show-hide-cog-skills grade-component">
+				<div className={"row-fluid details" + (this.state.hidden ? ' hide' : '')}><div className="span7">You have <b>{this.state.course.overdue_projects} {this.state.course.overdue_projects === 1 ? 'project' : 'projects'}</b> overdue.</div></div>
+				<div className={"row-fluid details show-hide-cog-skills grade-component" + (this.state.hidden ? ' hide' : '')}>
 					<div className="span7">For your <strong>cognitive skills</strong>, you have an average of:</div>
 					<div className="span1 cog-avg text-right">{this.state.cog_avg}</div>
 					<div className="span2 text-right cog-pcnt">{this.state.cog_percentage}%</div>
 				</div>
-				<div className="row-fluid cog-skills-row show-hide-cog-skills">
+				<div className={"row-fluid cog-skills-row show-hide-cog-skills" + (this.state.hidden ? ' hide' : '')}>
 					<div className="cog-skills span8">
 						<table className="table table-bordered table-condensed scores-table">
 							<thead>
@@ -229,7 +233,7 @@ var Course = React.createClass({
 						</table>
 					</div>
 				</div>
-				<div className="focus-areas details power-true grade-component">
+				<div className={"focus-areas details power-true grade-component" + (this.state.hidden ? ' hide' : '')}>
 					<div className="row-fluid">
 						<div className="span7">For your <strong>power</strong> focus areas, you are on pace to complete:</div>
 						<div className="span1 text-right out-of">
@@ -239,7 +243,7 @@ var Course = React.createClass({
 						<div className="span2 text-right pcnt">{this.state.power_percentage}%</div>
 					</div>
 				</div>
-				<div className="focus-areas details power-false grade-component">
+				<div className={"focus-areas details power-false grade-component" + (this.state.hidden ? ' hide' : '')}>
 					<div className="row-fluid">
 						<div className="span7">For your <strong>additional</strong> focus areas, you are on pace to complete:</div>
 						<div className="span1 text-right out-of">

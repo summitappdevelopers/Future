@@ -64,6 +64,7 @@ var Course = React.createClass({displayName: "Course",
 		state.additional_percentage = Math.round((state.course.additional_pace[0] || 1) / (state.course.additional_pace[1] || 1) * 100);
 		state.total_percentage = Math.round(state.cog_percentage * 0.7 + state.power_percentage * 0.21 + state.additional_percentage * 0.09);
 		state.total_grade = this.letter_grade(state.total_percentage);
+		state.hidden = true;
 
 		return state;
 	},
@@ -178,21 +179,24 @@ var Course = React.createClass({displayName: "Course",
 	buildSkill: function(skill) {
 		return React.createElement(Skill, {skill: skill, onCogGradeChange: this.onCogGradeChange.bind(this, skill), onCogWeightChange: this.onCogWeightChange.bind(this, skill)});
 	},
+	hideCourse: function(event) {
+		this.setState({ hidden: !this.state.hidden });
+	},
 	render: function() {
 		return (
 			React.createElement("div", {className: "course boxed"},
-				React.createElement("div", {className: "row-fluid show-hide-details"},
+				React.createElement("div", {className: "row-fluid show-hide-details", onClick: this.hideCourse},
 					React.createElement("div", {className: "span8"}, React.createElement("h4", null, this.state.course.name, ":")),
 					React.createElement("div", {className: "span2 text-right"}, React.createElement("h4", {className: "course-score"}, this.state.total_percentage, "%")),
 					React.createElement("div", {className: "span2"}, React.createElement("h4", {className: "course-grade"}, this.state.total_grade))
 				),
-				React.createElement("div", {className: "row-fluid details"}, React.createElement("div", {className: "span7"}, "You have ", React.createElement("b", null, this.state.course.overdue_projects, " ", this.state.course.overdue_projects === 1 ? 'project' : 'projects'), " overdue.")),
-				React.createElement("div", {className: "row-fluid details show-hide-cog-skills grade-component"},
+				React.createElement("div", {className: "row-fluid details" + (this.state.hidden ? ' hide' : '')}, React.createElement("div", {className: "span7"}, "You have ", React.createElement("b", null, this.state.course.overdue_projects, " ", this.state.course.overdue_projects === 1 ? 'project' : 'projects'), " overdue.")),
+				React.createElement("div", {className: "row-fluid details show-hide-cog-skills grade-component" + (this.state.hidden ? ' hide' : '')},
 					React.createElement("div", {className: "span7"}, "For your ", React.createElement("strong", null, "cognitive skills"), ", you have an average of:"),
 					React.createElement("div", {className: "span1 cog-avg text-right"}, this.state.cog_avg),
 					React.createElement("div", {className: "span2 text-right cog-pcnt"}, this.state.cog_percentage, "%")
 				),
-				React.createElement("div", {className: "row-fluid cog-skills-row show-hide-cog-skills"},
+				React.createElement("div", {className: "row-fluid cog-skills-row show-hide-cog-skills" + (this.state.hidden ? ' hide' : '')},
 					React.createElement("div", {className: "cog-skills span8"},
 						React.createElement("table", {className: "table table-bordered table-condensed scores-table"},
 							React.createElement("thead", null,
@@ -229,7 +233,7 @@ var Course = React.createClass({displayName: "Course",
 						)
 					)
 				),
-				React.createElement("div", {className: "focus-areas details power-true grade-component"},
+				React.createElement("div", {className: "focus-areas details power-true grade-component" + (this.state.hidden ? ' hide' : '')},
 					React.createElement("div", {className: "row-fluid"},
 						React.createElement("div", {className: "span7"}, "For your ", React.createElement("strong", null, "power"), " focus areas, you are on pace to complete:"),
 						React.createElement("div", {className: "span1 text-right out-of"},
@@ -239,7 +243,7 @@ var Course = React.createClass({displayName: "Course",
 						React.createElement("div", {className: "span2 text-right pcnt"}, this.state.power_percentage, "%")
 					)
 				),
-				React.createElement("div", {className: "focus-areas details power-false grade-component"},
+				React.createElement("div", {className: "focus-areas details power-false grade-component" + (this.state.hidden ? ' hide' : '')},
 					React.createElement("div", {className: "row-fluid"},
 						React.createElement("div", {className: "span7"}, "For your ", React.createElement("strong", null, "additional"), " focus areas, you are on pace to complete:"),
 						React.createElement("div", {className: "span1 text-right out-of"},
