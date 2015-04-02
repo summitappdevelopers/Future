@@ -18,5 +18,5 @@ function createElement(elementType, applicationType, scriptName, callback) {
 
 // createElement('link', 'text/css', 'application.css', null);
 createElement('script', 'text/javascript', 'libs.js', function() {
-	createElement('script', 'text/javascript', 'precompiled-user.js', null);
+	createElement('script', 'text/javascript', 'user.js', null);
 });

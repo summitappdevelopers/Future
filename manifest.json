@@ -10,7 +10,7 @@
 	],
 	"web_accessible_resources": [
 		"libs.js",
-		"precompiled-user.js",
+		"user.js",
 		"application.css"
 	],
 	"content_scripts": [

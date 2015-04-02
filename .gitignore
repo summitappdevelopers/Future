@@ -5,3 +5,6 @@
 .sbl/
 *.sublime-project
 *.sublime-workspace
+
+# JSX
+.module-cache/

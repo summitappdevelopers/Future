@@ -133,22 +133,22 @@ var utils = {
 utils.courses = JSON.parse(localStorage.getItem('old_courses') || 'null') || utils.getCourses();
 utils.grade_level = utils.getGradeLevel(utils.courses);
 
-var Skill = React.createClass({displayName: "Skill",
+var Skill = React.createClass({
 	buildTD: function(number) {
-		return React.createElement("td", {key: 'grade.' + number, className: 'indicator ' + (this.props.skill.score === number ? 'scored' : ''), onClick: this.props.onCogGradeChange}, number)
+		return <td key={'grade.' + number} className={'indicator ' + (this.props.skill.score === number ? 'scored' : '' )} onClick={this.props.onCogGradeChange}>{number}</td>
 	},
 	render: function() {
 		return (
-			React.createElement("tr", null, 
-				React.createElement("td", null, this.props.skill.name), 
-				React.createElement("td", {style: { margin: '0px', padding: '0px'}}, React.createElement("input", {style: { height: '100%', width: '54px', margin: '0px', padding: '0px', border: 'none'}, value: this.props.skill.weight, onChange: this.props.onCogWeightChange})), 
-				[1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8].map(this.buildTD)
-			)
+			<tr>
+				<td>{this.props.skill.name}</td>
+				<td style={{ margin: '0px', padding: '0px' }}><input style={{ height: '100%', width: '54px', margin: '0px', padding: '0px', border: 'none' }} value={this.props.skill.weight} onChange={this.props.onCogWeightChange} /></td>
+				{[1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8].map(this.buildTD)}
+			</tr>
 		);
 	}
 });
 
-var Course = React.createClass({displayName: "Course",
+var Course = React.createClass({
 	getInitialState: function() {
 		var state = {};
 		state.course = this.props.course;
@@ -232,87 +232,87 @@ var Course = React.createClass({displayName: "Course",
 		this.updateState(['course', type + '_percentage', 'power_on_track', 'total_percentage', 'total_grade']);
 	},
 	buildSkill: function(skill, defaults) {
-		return React.createElement(Skill, {key: 'skill.' + skill.name.replace(/[\s]/g, ''), skill: skill, onCogGradeChange: this.onCogGradeChange.bind(this, skill), onCogWeightChange: this.onCogWeightChange.bind(this, skill)});
+		return <Skill key={'skill.' + skill.name.replace(/[\s]/g, '')} skill={skill} onCogGradeChange={this.onCogGradeChange.bind(this, skill)} onCogWeightChange={this.onCogWeightChange.bind(this, skill)} />;
 	},
 	toggleHideCourse: function(event) {
 		this.setState({ hidden: !this.state.hidden });
 	},
 	render: function() {
 		return (
-			React.createElement("div", {className: "course boxed"}, 
-				React.createElement("div", {className: "row-fluid show-hide-details", onClick: this.toggleHideCourse, style: { 'cursor': 'pointer'}}, 
-					React.createElement("div", {className: "span8"}, React.createElement("h4", null, this.state.course.name, ":")), 
-					React.createElement("div", {className: "span2 text-right"}, React.createElement("h4", {className: "course-score"}, Math.round(this.state.total_percentage), "%")), 
-					React.createElement("div", {className: "span2"}, React.createElement("h4", {className: "course-grade"}, this.state.total_grade))
-				), 
-				React.createElement("div", {className: "row-fluid details" + (this.state.hidden ? ' hide' : '')}, React.createElement("div", {className: "span7"}, "You have ", React.createElement("b", null, this.state.course.overdue_projects, " ", this.state.course.overdue_projects === 1 ? 'project' : 'projects'), " overdue.")), 
-				React.createElement("div", {className: "row-fluid details show-hide-cog-skills grade-component" + (this.state.hidden ? ' hide' : '')}, 
-					React.createElement("div", {className: "span7"}, "For your ", React.createElement("strong", null, "cognitive skills"), ", you have an average of:"), 
-					React.createElement("div", {className: "span1 cog-avg text-right"}, Math.round(this.state.cog_avg * 100) / 100), 
-					React.createElement("div", {className: "span2 text-right cog-pcnt"}, Math.round(this.state.cog_percentage), "%")
-				), 
-				React.createElement("div", {className: "row-fluid cog-skills-row show-hide-cog-skills" + (this.state.hidden ? ' hide' : '')}, 
-					React.createElement("div", {className: "cog-skills span8"}, 
-						React.createElement("table", {className: "table table-bordered table-condensed scores-table"}, 
-							React.createElement("thead", null, 
-								React.createElement("tr", null, 
-									React.createElement("th", null), 
-									React.createElement("th", null), 
-									React.createElement("th", {colSpan: 15}, 
-										React.createElement("div", {className: "cog-skill-avg", style: { position: 'relative', left: 'calc( ' + this.state.cog_percentage + '% - 20% )'}}, Math.round(this.state.cog_avg))
-									)
-								), 
-								React.createElement("tr", null, 
-									React.createElement("th", null, "Cognitive Skill"), 
-									React.createElement("th", null, "Weight"), 
-									React.createElement("th", null), 
-									React.createElement("th", null), 
-									React.createElement("th", null), 
-									React.createElement("th", null), 
-									React.createElement("th", null), 
-									React.createElement("th", null), 
-									React.createElement("th", null), 
-									React.createElement("th", null), 
-									React.createElement("th", {className: "indicator"}, "C-"), 
-									React.createElement("th", null), 
-									React.createElement("th", null), 
-									React.createElement("th", null), 
-									React.createElement("th", {className: "indicator"}, "A+"), 
-									React.createElement("th", null), 
-									React.createElement("th", null)
-								)
-							), 
-							React.createElement("tbody", null, 
-								this.state.course.cog_skills.map(this.buildSkill)
-							)
-						)
-					)
-				), 
-				React.createElement("div", {className: "focus-areas details power-true grade-component" + (this.state.hidden ? ' hide' : '')}, 
-					React.createElement("div", {className: "row-fluid"}, 
-						React.createElement("div", {className: "span7"}, "For your ", React.createElement("strong", null, "power"), " focus areas, you are on pace to complete:"), 
-						React.createElement("div", {className: "span1 text-right out-of"}, 
-							React.createElement("input", {value: this.state.course.power_pace[0], style: { width: '20px', border: 'none', textAlign: 'right'}, onChange: this.onAssessmentChange.bind(this, 'power')}), 
-							"/ ", this.state.course.power_pace[1]
-						), 
-						React.createElement("div", {className: "span2 text-right pcnt"}, Math.round(this.state.power_percentage), "%")
-					)
-				), 
-				React.createElement("div", {className: "focus-areas details power-false grade-component" + (this.state.hidden ? ' hide' : '')}, 
-					React.createElement("div", {className: "row-fluid"}, 
-						React.createElement("div", {className: "span7"}, "For your ", React.createElement("strong", null, "additional"), " focus areas, you are on pace to complete:"), 
-						React.createElement("div", {className: "span1 text-right out-of"}, 
-							React.createElement("input", {value: this.state.course.additional_pace[0], style: { width: '20px', border: 'none', textAlign: 'right'}, onChange: this.onAssessmentChange.bind(this, 'additional')}), 
-							"/ ", this.state.course.additional_pace[1]
-						), React.createElement("div", {className: "span2 text-right pcnt"}, Math.round(this.state.additional_percentage), "%")
-					)
-				)
-			)
+			<div className="course boxed">
+				<div className="row-fluid show-hide-details" onClick={this.toggleHideCourse} style={{ 'cursor': 'pointer' }}>
+					<div className="span8"><h4>{this.state.course.name}:</h4></div>
+					<div className="span2 text-right"><h4 className="course-score">{Math.round(this.state.total_percentage)}%</h4></div>
+					<div className="span2"><h4 className="course-grade">{this.state.total_grade}</h4></div>
+				</div>
+				<div className={"row-fluid details" + (this.state.hidden ? ' hide' : '')}><div className="span7">You have <b>{this.state.course.overdue_projects} {this.state.course.overdue_projects === 1 ? 'project' : 'projects'}</b> overdue.</div></div>
+				<div className={"row-fluid details show-hide-cog-skills grade-component" + (this.state.hidden ? ' hide' : '')}>
+					<div className="span7">For your <strong>cognitive skills</strong>, you have an average of:</div>
+					<div className="span1 cog-avg text-right">{Math.round(this.state.cog_avg * 100) / 100}</div>
+					<div className="span2 text-right cog-pcnt">{Math.round(this.state.cog_percentage)}%</div>
+				</div>
+				<div className={"row-fluid cog-skills-row show-hide-cog-skills" + (this.state.hidden ? ' hide' : '')}>
+					<div className="cog-skills span8">
+						<table className="table table-bordered table-condensed scores-table">
+							<thead>
+								<tr>
+									<th></th>
+									<th></th>
+									<th colSpan={15}>
+										<div className="cog-skill-avg" style={{ position: 'relative', left: 'calc( ' + this.state.cog_percentage + '% - 20% )' }}>{Math.round(this.state.cog_avg)}</div>
+									</th>
+								</tr>
+								<tr>
+									<th>Cognitive Skill</th>
+									<th>Weight</th>
+									<th></th>
+									<th></th>
+									<th></th>
+									<th></th>
+									<th></th>
+									<th></th>
+									<th></th>
+									<th></th>
+									<th className="indicator">C-</th>
+									<th></th>
+									<th></th>
+									<th></th>
+									<th className="indicator">A+</th>
+									<th></th>
+									<th></th>
+								</tr>
+							</thead>
+							<tbody>
+								{this.state.course.cog_skills.map(this.buildSkill)}
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div className={"focus-areas details power-true grade-component" + (this.state.hidden ? ' hide' : '')}>
+					<div className="row-fluid">
+						<div className="span7">For your <strong>power</strong> focus areas, you are on pace to complete:</div>
+						<div className="span1 text-right out-of">
+							<input value={this.state.course.power_pace[0]} style={{ width: '20px', border: 'none', textAlign: 'right' }} onChange={this.onAssessmentChange.bind(this, 'power')} />
+							&#47; {this.state.course.power_pace[1]}
+						</div>
+						<div className="span2 text-right pcnt">{Math.round(this.state.power_percentage)}%</div>
+					</div>
+				</div>
+				<div className={"focus-areas details power-false grade-component" + (this.state.hidden ? ' hide' : '')}>
+					<div className="row-fluid">
+						<div className="span7">For your <strong>additional</strong> focus areas, you are on pace to complete:</div>
+						<div className="span1 text-right out-of">
+							<input value={this.state.course.additional_pace[0]} style={{ width: '20px', border: 'none', textAlign: 'right' }} onChange={this.onAssessmentChange.bind(this, 'additional')} />
+							&#47; {this.state.course.additional_pace[1]}
+						</div><div className="span2 text-right pcnt">{Math.round(this.state.additional_percentage)}%</div>
+					</div>
+				</div>
+			</div>
 		);
 	}
 });
 
-var App = React.createClass({displayName: "App",
+var App = React.createClass({
 	getInitialState: function() {
 		return {
 			courses: utils.courses
@@ -327,23 +327,23 @@ var App = React.createClass({displayName: "App",
 		}, 100);
 	},
 	buildCourse: function(course) {
-		return React.createElement(Course, {key: 'course.' + course.name.replace(/[\s]/g, ''), course: course});
+		return <Course key={'course.' + course.name.replace(/[\s]/g, '')} course={course} />;
 	},
 	render: function() {
 		return (
-			React.createElement("div", {id: "students-next-grades", className: "container-fluid students-next-year", style: { marginTop: '20px'}}, 
-				React.createElement("p", {className: "warning"}, 
-					React.createElement("em", {style: { color: 'red'}}, "These grades may not represent your current grades."), 
-					"   ", 
-					React.createElement("button", {onClick: this.resetGrades}, "Reset/Update Grades")
-				), 
-				this.state.courses.map(this.buildCourse)
-			)
+			<div id="students-next-grades" className="container-fluid students-next-year" style={{ marginTop: '20px' }}>
+				<p className="warning">
+					<em style={{ color: 'red' }}>These grades may not represent your current grades.</em>
+					&nbsp; &nbsp;
+					<button onClick={this.resetGrades}>Reset&#47;Update Grades</button>
+				</p>
+				{this.state.courses.map(this.buildCourse)}
+			</div>
 		);
 	}
 });
 
 React.render(
-	React.createElement(App, null),
+	<App />,
 	$('body').html('').get(0)
 );
