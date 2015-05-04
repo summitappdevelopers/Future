@@ -1,9 +1,21 @@
+// Custom break message for the forEach function.
 var FOREACH_BREAK = '\0000&&AND&&_____foreach_break__\0\0';
 
+// Remove all styles and change the 404 title.
 $('title').text('Summit PLP | My Future');
 $('style').remove();
 
+// Polyfill hack to get rid of all rounding for testing.
+// Math.round = function(a) { return a; }
+
 var utils = {
+	// Calculates the cog average from all the skills.
+	// To do this, use the following algorithm:
+	// 	For each cog skill dimension that's been added:
+	// 		Multiple the number of times it has been scored * the highest score the student has gotten
+	//	Add all of those up
+	// 	Add up the total number of times all the skills has been assessed in this course
+	// 	Divide the first one by the second
 	cog_avg: function(skills) {
 		var cog_total = 0,
 			weight_total = 0;
@@ -19,9 +31,47 @@ var utils = {
 
 		return cog_total / weight_total;
 	},
+	// Converts the cog average to a percentage.
+	// To convert that raw average into a percentage, you also need to know the student's grade level.
+	// 	Formula:
+	// 		pcnt = 15 * (raw - seventy_pcnt_score) + 70
+	// 	Where `raw` is what you computed in step 1 and seventy_pcnt_score is from this table:
+	// 	The cog skills component is computed based on the grade level of the course:
+	// 	+–––––––––––––+––––––––––––––––––––+––––––––––––––––––––––––––––+––––––––––––––––––––––––––––––+
+	// 	| Grade Level | seventy_pcnt_score | B, 85%, Cog Skills Average | A+, 100%, Cog Skills Average |
+	// 	+–––––––––––––+––––––––––––––––––––+––––––––––––––––––––––––––––+––––––––––––––––––––––––––––––+
+	// 	|     6th     |          2         |              3             |             4                |
+	// 	|     7th     |         2.5        |             3.5            |            4.5               |
+	// 	|     8th     |          3         |              4             |             5                |
+	// 	|     9th     |         3.5        |             4.5            |            5.5               |
+	// 	|    10th     |          4         |              5             |             6                |
+	// 	|    11th     |         4.5        |             5.5            |            6.5               |
+	// 	|    12th     |          5         |              6             |             7                |
+	// 	+–––––––––––––+––––––––––––––––––––+––––––––––––––––––––––––––––+––––––––––––––––––––––––––––––+
 	cog_percentage: function(cog_avg, grade_level) {
 		return 15 * (cog_avg - (((grade_level || 9) - 6) * 0.5 + 2)) + 70;
 	},
+	// Calculates the total course percentage.
+	// To do that, use the following algorithm:
+	// 	Add the following:
+	// 		Multiply the cog percentage by 0.7 (70% of grade).
+	// 		If powers are on track for 100%, add 21% to the grade. Otherwise, add nothing.
+	// 		Multiply the additional percentage by 0.09 (9% of grade).
+	total_percentage: function(power_on_track, cog_percentage, additional_percentage) {
+		return cog_percentage * 0.7 + (power_on_track ? 21.0 : 0.0) + additional_percentage * 0.09
+	},
+	// Converts a percentage to a letter grade.
+	// To do that, we need the ones and tens digit.
+	//
+	// If the tens digit is greater than 9 (100%+), automatic A+.
+	// If the tens digit is greater than 8 (90-99%), their base grade is A.
+	// If the tens digit is greater than 7 (80-89%), their base grade is B.
+	// If the tens digit is greater than 6 (70-79%), their base grade is C.
+	//
+	// If the ones digit is less than 3, they get a minus.
+	// 	Ex: 92% --> 2 < 3 === true --> A-.
+	// If the tens digit is greater than 6, they get a plus.
+	// 	Ex: 97% --> 7 > 6 === true --> A+.
 	letter_grade: function(percentage) {
 		var plusminus = percentage % 10;
 		var abci = (percentage - plusminus) / 10;
@@ -47,13 +97,21 @@ var utils = {
 
 		return grade;
 	},
+	// Deduce the student's grade level.
+	// This is possible by looking at the student's English course.
+	// English is the only continuum where each grade gets a mandatory course where the name is unique.
+	// We can just test the course names for matches to grade-specific English course names.
 	getGradeLevel: function(courses) {
+		// Make sure courses is defined and is an array.
 		if (!courses || !courses.length) {
-			return 9;
+			return 6;
 		}
 
-		var grade_level = 9;
+		var grade_level = 6;
 
+		// I should switch to just a plain for() loop.
+		// The only way to break a forEach loop is by throwing something, catching it, and discarding the value.
+		// To be safe, throw a very unique string so we know that we did not catch an actual error.
 		try {
 			courses.forEach(function(course) {
 				if (course.name === 'English 6') {
@@ -81,21 +139,27 @@ var utils = {
 			});
 		} catch (e) {
 			if (e !== FOREACH_BREAK) {
+				// We caught another error and should pass it along.
 				throw e;
 			}
 		}
 
 		return grade_level;
 	},
+	// Gets course data by scraping the grades page.
 	getCourses: function() {
 		var courses = [];
+
+		// Create a fake body in jQuery where we will store jQuery-parseable HTML we got.
 		$('<body></body>')
 			.append(
+				// Get the HTML from /my/grades and append it in the fake body.
 				$.ajax({
 					type: 'GET',
-					url: 'https://app.mysummitps.org/my/grades',
-					async: false,
+					url: '/my/grades',
+					async: false, // This is detrimental to the UX but removes a lot of work.
 					error: function() {
+						// There was some error fetching grades (maybe they did not log in).
 						alert('There was an error fetching your grades. Have you logged in?');
 						window.setTimeout(function() {
 							window.location.href = '/';
@@ -103,10 +167,12 @@ var utils = {
 					}
 				}).responseText
 			)
+			// Find each course and get the course data out of it.
 			.find('div.course.boxed').toArray().forEach(function(elem) {
 				elem = $(elem);
-				var skill_id = 0;
+				var skill_id = 0; // Unique (per course) skill ids.
 
+				// Get the goods.
 				courses.push({
 					id: courses.length,
 					name: elem.find('div.span8>h4').text().slice(0, -1),
@@ -126,11 +192,18 @@ var utils = {
 				});
 			});
 
+		// Set localStorage item so we don't have to scrape each time.
+		// Do this mainly because it takes some time to scrape the page (which is detrimental to UX).
 		localStorage.setItem('old_courses', JSON.stringify(courses));
 		return courses;
 	}
 };
+
+// We don't put this stuff in React right now because I'm trying to get things organized.
+
+// Get the courses.
 utils.courses = JSON.parse(localStorage.getItem('old_courses') || 'null') || utils.getCourses();
+// Grade level is not stored in <App />.state because we would have to rerender every
 utils.grade_level = utils.getGradeLevel(utils.courses);
 
 var Skill = React.createClass({displayName: "Skill",
@@ -156,9 +229,9 @@ var Course = React.createClass({displayName: "Course",
 		state.cog_percentage = utils.cog_percentage(state.cog_avg, utils.grade_level);
 		state.power_percentage = state.course.power_pace[1] === 0 ? 100 : ((state.course.power_pace[0] || 1) / (state.course.power_pace[1]) * 100);
 		state.additional_percentage = state.course.additional_pace[1] === 0 ? 100 : ((state.course.additional_pace[0] || 1) / (state.course.additional_pace[1]) * 100);
-		state.power_on_track = state.power_percentage >= 100;
-		state.total_percentage = state.cog_percentage * 0.7 + (state.power_on_track ? 21 : 0) + state.additional_percentage * 0.09;
-		state.total_grade = (state.power_percentage < 100 || state.course.overdue_projects > 0) ? 'Incomplete' : utils.letter_grade(state.total_percentage);
+		state.power_on_track = state.power_percentage >= 70;
+		state.total_percentage = state.cog_percentage * 0.7 + (state.power_on_track ? 21.0 : 0.0) + state.additional_percentage * 0.09;
+		state.total_grade = (state.power_percentage < 70 || state.course.overdue_projects > 0) ? 'Incomplete' : utils.letter_grade(state.total_percentage);
 		state.hidden = true;
 
 		return state;
@@ -198,19 +271,19 @@ var Course = React.createClass({displayName: "Course",
 				}
 
 				case 'power_on_track': {
-					this.state.power_on_track = this.state.power_percentage >= 100;
+					this.state.power_on_track = this.state.power_percentage >= 70;
 					newstate.power_on_track = this.state.power_on_track;
 					break;
 				}
 
 				case 'total_percentage': {
-					this.state.total_percentage = +this.state.cog_percentage * 0.7 + (this.state.power_on_track ? 21 : 0) + +this.state.additional_percentage * 0.09;
+					this.state.total_percentage = +this.state.cog_percentage * 0.7 + (this.state.power_on_track ? 21.0 : 0.0) + +this.state.additional_percentage * 0.09;
 					newstate.total_percentage = this.state.total_percentage;
 					break;
 				}
 
 				case 'total_grade': {
-					this.state.total_grade = (this.state.power_percentage < 100 || this.state.course.overdue_projects > 0) ? 'Incomplete' : utils.letter_grade(+this.state.total_percentage);
+					this.state.total_grade = (this.state.power_percentage < 70 || this.state.course.overdue_projects > 0) ? 'Incomplete' : utils.letter_grade(+this.state.total_percentage);
 					newstate.total_grade = this.state.total_grade;
 					break;
 				}
